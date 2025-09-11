@@ -506,14 +506,166 @@ export async function findDeploymentBlock(contractAddress: string): Promise<bigi
   return deploymentBlock
 }
 
+// Hybrid approach: Event-based scanning + Transaction parsing for accuracy
+async function getHistoricalLendingDataHybrid(tokenAddress: string, searchDays: number): Promise<any[]> {
+  const lookbackBlocks = Math.floor((searchDays * 24 * 60 * 60) / 2)
+  const latestBlock = await client.getBlockNumber()
+  const fromBlock = latestBlock - BigInt(lookbackBlocks)
+  
+  console.log(`🔍 Hybrid approach: Searching ${searchDays} days (${lookbackBlocks} blocks)`)
+  
+  // Step 1: Get lending events (fast - finds all borrowers)
+  console.log('📡 Step 1: Fetching lending events...')
+  
+  // Use ABI directly for events
+  const borrowEventABI = ITokenManagerABI.find(item => item.type === 'event' && item.name === 'BorrowFeeEmission') as any
+  const repayEventABI = ITokenManagerABI.find(item => item.type === 'event' && item.name === 'RedeemTokenCollateral') as any
+  
+  if (!borrowEventABI || !repayEventABI) {
+    throw new Error('Required events not found in ABI')
+  }
+  
+  const [borrowLogs, repayLogs] = await Promise.all([
+    client.getLogs({
+      address: tokenAddress as `0x${string}`,
+      event: borrowEventABI,
+      fromBlock,
+      toBlock: latestBlock
+    }),
+    client.getLogs({
+      address: tokenAddress as `0x${string}`,
+      event: repayEventABI,
+      fromBlock,
+      toBlock: latestBlock
+    })
+  ])
+  
+  // Extract all unique borrowers from events
+  const allBorrowers = new Set([
+    ...borrowLogs.map(log => (log as any).args?.borrower).filter(Boolean),
+    ...repayLogs.map(log => (log as any).args?.borrower).filter(Boolean)
+  ])
+  
+  console.log(`✅ Found ${allBorrowers.size} unique borrowers from events`)
+  
+  // Step 2: Get current balances for all borrowers (instant)
+  console.log('📊 Step 2: Fetching current balances...')
+  const currentBalances = new Map<string, bigint>()
+  
+  for (const borrower of allBorrowers) {
+    try {
+      const balance = await client.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: ITokenManagerABI,
+        functionName: 'userBorrowedAmounts',
+        args: [borrower, 0]
+      }) as any
+      
+      if (balance?.tokenAmount > 0n) {
+        currentBalances.set(borrower, balance.tokenAmount)
+      }
+    } catch (error) {
+      // Some borrowers might not have current balances, that's okay
+      debugLog(`No current balance for ${borrower}:`, error.message)
+    }
+  }
+  
+  console.log(`✅ Found ${currentBalances.size} borrowers with current balances`)
+  
+  // Step 3: Process event data for additional insights
+  const eventData = {
+    borrows: borrowLogs.map(log => ({
+      borrower: (log as any).args?.borrower,
+      amounts: (log as any).args?.amounts,
+      blockNumber: log.blockNumber
+    })).filter(b => b.borrower),
+    repays: repayLogs.map(log => ({
+      borrower: (log as any).args?.borrower,
+      inputTokenBorrowAmount: (log as any).args?.inputTokenBorrowAmount,
+      totalTokenRedeemed: (log as any).args?.totalTokenRedeemed,
+      blockNumber: log.blockNumber
+    })).filter(r => r.borrower)
+  }
+  
+  return Array.from(currentBalances.entries()).map(([borrower, balance]) => ({
+    borrower,
+    balance,
+    eventData: {
+      borrows: eventData.borrows.filter(b => b.borrower === borrower),
+      repays: eventData.repays.filter(r => r.borrower === borrower)
+    }
+  }))
+}
+
 // Top lenders discovery logic using REAL BLOCKCHAIN DATA
 
 export async function getTopLenders(tokenAddress: string, searchDays: number = 3): Promise<TopLendersResult> {
   try {
     console.log(`Fetching LIVE top lenders for token: ${tokenAddress}`)
-    console.log('Using BLOCK SEARCH with TRANSACTION PARSING approach...')
+    console.log('Using HYBRID approach: Event-based scanning + Current balances...')
     
-    // Use block search with transaction parsing approach
+    // Try hybrid approach first (much faster)
+    try {
+      const hybridData = await getHistoricalLendingDataHybrid(tokenAddress, searchDays)
+      
+      if (hybridData.length > 0) {
+        console.log(`✅ Found ${hybridData.length} lenders from hybrid approach`)
+        
+        // Convert to TopLendersResult format
+        const lenders = hybridData
+          .sort((a, b) => Number(b.balance - a.balance))
+          .slice(0, 10)
+          .map((lender, index) => ({
+            address: lender.borrower,
+            balance: lender.balance.toString(),
+            poolPercentage: 0 // Will be calculated below
+          }))
+        
+        // Calculate total lent and pool percentages
+        const totalLent = hybridData.reduce((sum, lender) => sum + lender.balance, BigInt(0))
+        
+        // Get Launch Pool balance dynamically
+        const mavTokenAddress = MAV_TOKEN_ADDRESS
+        const launchPoolBalance = await client.readContract({
+          address: mavTokenAddress as `0x${string}`,
+          abi: [
+            {
+              "inputs": [{"name": "account", "type": "address"}],
+              "name": "balanceOf",
+              "outputs": [{"name": "", "type": "uint256"}],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ],
+          functionName: 'balanceOf',
+          args: [LAUNCH_POOL_ADDRESS as `0x${string}`]
+        })
+        
+        const totalPoolLiquidity = launchPoolBalance + totalLent
+        
+        // Calculate pool percentages
+        lenders.forEach(lender => {
+          lender.poolPercentage = Number((BigInt(lender.balance) * BigInt(10000)) / totalPoolLiquidity) / 100
+        })
+        
+        const result: TopLendersResult = {
+          lenders,
+          totalLent,
+          totalPoolLiquidity,
+          tokenAddress,
+          lastUpdated: new Date()
+        }
+        
+        console.log(`✅ Hybrid approach complete: ${lenders.length} lenders, ${Number(totalLent) / 1e18} MAV total`)
+        return result
+      }
+    } catch (hybridError) {
+      console.log('❌ Hybrid approach failed, falling back to block search...')
+      console.error('Hybrid error:', hybridError)
+    }
+    
+    // Fallback to block search with transaction parsing approach
+    console.log('Using BLOCK SEARCH with TRANSACTION PARSING approach...')
     try {
       // Calculate lookback period based on days parameter
       const lookbackBlocks = Math.floor((searchDays * 24 * 60 * 60) / 2) // Base has ~2 second block time
