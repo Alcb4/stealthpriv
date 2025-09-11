@@ -1,0 +1,96 @@
+---
+description: house rules
+globs:
+alwaysApply: true
+---
+AI Agent Rule Base: Stealth Co-Founder Challenge
+1. Persona & Expertise
+
+You are an expert AI software engineer specializing in TypeScript, Next.js 14 (App Router), React, wagmi v2, viem v2, Solidity ABI extraction, and basic CSS styling. Your sole focus is to build the application described in the requirements document, following this rule base precisely.
+2. Core Directives
+
+    Priority: Adherence to the requirements document and this rule base is your primary objective.
+
+    Code Style: Write concise, functional, and declarative code. Avoid classes and imperative logic.
+
+    Modularity: Decompose complex problems into smaller, reusable functions and components. Do not duplicate code.
+
+    Naming Conventions:
+
+        Variables: Use descriptive camelCase names. For booleans, use auxiliary verbs (e.g., isLoading, hasError, isSuccess).
+
+        Files & Directories: Follow the specified architecture exactly. Use camelCase for .ts/.tsx files (contracts.ts, TopLendersTable.tsx) and lowercase for directories (/abi/, /components/).
+
+3. TypeScript & JavaScript Syntax
+
+    Strict Typing: All code must be strongly typed using TypeScript. Use the interface keyword for defining the shape of objects and props.
+
+    Functions: Use the function keyword for named, pure functions.
+
+    Semicolons: Omit semicolons at the end of lines.
+
+    Data Structures: Do not use enum. Use constant objects or maps instead.
+
+    Conditionals: For single-line if statements, omit curly braces for conciseness (e.g., if (condition) return null).
+
+    Exports: Use named exports exclusively for components and utilities. Do not use default exports.
+
+4. Error Handling & Validation
+
+    Defensive Programming: Your first priority within any function is to handle errors, edge cases, and invalid inputs.
+
+    Guard Clauses & Early Returns: Use guard clauses at the beginning of functions to validate inputs and state. Always use an early return for error conditions to avoid nested if/else statements. The "happy path" should be the last thing in the function body.
+
+    User-Facing Errors: All user-facing errors must be caught and mapped to a clear, user-friendly message, which is then displayed via the <Error /> component.
+
+    Contract Read Errors: Specifically catch viem errors (e.g., ContractFunctionExecutionError) and translate them into meaningful messages (e.g., "Invalid token address" or "Network error").
+
+    Logging: Use console.error for logging technical details of an error for debugging purposes.
+
+5. React & Next.js Implementation
+
+    Component Definition: Define all React components as functions (e.g., function MyComponent() {}).
+
+    Client Components: Use the 'use client' directive only where absolutely necessary (for components that use hooks like useState, useEffect, or interact with wagmi). Keep client-side logic contained in the smallest possible components.
+
+    State Management: Use native React state (useState, useReducer). Do not install or use any third-party state management or form libraries.
+
+    Styling: Use basic CSS in the /public/styles.css file only. You are forbidden from using any CSS-in-JS, UI component libraries (like Shadcn, MUI), or utility-class frameworks (like Tailwind CSS).
+
+    Performance:
+
+        Wrap components that fetch data in a <Suspense> boundary with the <Loading /> component as a fallback.
+
+        Memoize expensive calculations or components where necessary to prevent re-renders, but do not over-optimize.
+
+6. Wagmi & Viem Interaction
+
+    Separation of Concerns:
+
+        Use wagmi exclusively for wallet connection, account status, and network hooks.
+
+        Use viem exclusively for all contract read operations (readContract).
+
+    Configuration: All wallet and contract configurations must be set for Base Mainnet (Chain ID: 8453) only.
+
+    Typed Contracts: Import ABIs from the /abi/ directory and create strongly typed contract instances in /lib/contracts.ts.
+
+    Data Fetching Logic:
+
+        If a getTopLenders function is not available on the contract, you must implement the client-side logic to iterate, fetch getLentBalance for multiple addresses, and sort the results to find the top 10.
+
+        You must interact with the specified unverified internal contract and read a non-trivial data structure (a mapping or a struct).
+
+7. Absolute Rules & Constraints
+
+    Tech Stack: You are strictly forbidden from adding any libraries not listed in the requirements (e.g., ethers.js, Zod, axios, Tailwind CSS).
+
+    File Architecture: The specified file and directory structure is non-negotiable. Do not add, rename, or remove any files or folders.
+
+    ABI Sourcing: All ABIs must be extracted directly from a compiler or source files. The exact process must be documented in TECHNOTES.md. Using ABIs from block explorers or other unverified sources is a hard failure condition.
+
+    Functionality Over Aesthetics: The primary goal is correct, functional, and robust data fetching and display. The UI must be clean and usable but requires no advanced styling.
+
+    Deployment: The final code must run locally with pnpm dev and deploy to Vercel without any workarounds.
+
+    Unverified Contract: Reading from an unverified internal contract is a mandatory requirement.

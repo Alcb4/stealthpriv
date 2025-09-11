@@ -1,0 +1,665 @@
+{
+	"deploy": {
+		"VM:-": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"main:1": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"ropsten:3": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"rinkeby:4": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"kovan:42": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"goerli:5": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"Custom": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		}
+	},
+	"data": {
+		"bytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"deployedBytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"immutableReferences": {},
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"gasEstimates": null,
+		"methodIdentifiers": {
+			"borrowAllowed(bool,int32,uint256)": "076942fd",
+			"borrowInformation(address,uint128)": "c4d5edbb",
+			"distribution()": "5ee58efc",
+			"estimateBorrowQuoteToEth(address,address,uint128)": "8c6954e7",
+			"estimateRedeemTokenCollateralWithEth(address,address,uint128)": "65898f7e",
+			"estimateRedeemTokenCollateralWithEthByTick(address,address,int32[],uint128[])": "f63e04bf",
+			"lastTick()": "3dfa5d87",
+			"redeemInformation(address,address,uint128)": "7b69dcfa",
+			"redeemInformationByTick(address,address,int32[],uint128[])": "3b5375d4",
+			"ticksIntoPool(address)": "6c5e7159",
+			"totalBorrowedAmounts(address)": "efee794c",
+			"userBorrowedAmounts(address,address)": "c5d7a1c8"
+		}
+	},
+	"abi": [
+		{
+			"inputs": [
+				{
+					"internalType": "int32",
+					"name": "startTick",
+					"type": "int32"
+				},
+				{
+					"internalType": "int32",
+					"name": "endTick",
+					"type": "int32"
+				}
+			],
+			"name": "BorrowingNotSupported",
+			"type": "error"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract IMaverickV2Pool",
+					"name": "pool",
+					"type": "address"
+				},
+				{
+					"internalType": "uint32",
+					"name": "binId",
+					"type": "uint32"
+				}
+			],
+			"name": "NonQuoteBin",
+			"type": "error"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "int32",
+					"name": "startTick",
+					"type": "int32"
+				},
+				{
+					"internalType": "int32",
+					"name": "endTick",
+					"type": "int32"
+				}
+			],
+			"name": "RedeemNotSupported",
+			"type": "error"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "int32",
+					"name": "tick",
+					"type": "int32"
+				},
+				{
+					"internalType": "int32",
+					"name": "activeTick",
+					"type": "int32"
+				}
+			],
+			"name": "TickIsNotAllQuote",
+			"type": "error"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "index",
+					"type": "uint256"
+				},
+				{
+					"internalType": "int32",
+					"name": "tick",
+					"type": "int32"
+				},
+				{
+					"internalType": "uint256",
+					"name": "debtDataTokenAmount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "inputTokenAmount",
+					"type": "uint256"
+				}
+			],
+			"name": "TryingToRedeemMoreThanDebt",
+			"type": "error"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "bool",
+					"name": "tokenIsA",
+					"type": "bool"
+				},
+				{
+					"internalType": "int32",
+					"name": "tick",
+					"type": "int32"
+				},
+				{
+					"internalType": "uint256",
+					"name": "tickIntoPool",
+					"type": "uint256"
+				}
+			],
+			"name": "borrowAllowed",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "uint128",
+					"name": "tokenBorrowAmount",
+					"type": "uint128"
+				}
+			],
+			"name": "borrowInformation",
+			"outputs": [
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenCollateralAmount",
+					"type": "uint128"
+				},
+				{
+					"components": [
+						{
+							"internalType": "uint32[]",
+							"name": "binIds",
+							"type": "uint32[]"
+						},
+						{
+							"internalType": "uint128[]",
+							"name": "amounts",
+							"type": "uint128[]"
+						}
+					],
+					"internalType": "struct IMaverickV2Pool.RemoveLiquidityParams",
+					"name": "params",
+					"type": "tuple"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "distribution",
+			"outputs": [
+				{
+					"internalType": "contract IDistribution",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "contract IMaverickV2Pool",
+					"name": "ethToQuotePool",
+					"type": "address"
+				},
+				{
+					"internalType": "uint128",
+					"name": "tokenBorrowAmount",
+					"type": "uint128"
+				}
+			],
+			"name": "estimateBorrowQuoteToEth",
+			"outputs": [
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "tokenCollateralAmount",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "quoteToRepayAmount",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "quoteToBorrowerAmount",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint256",
+					"name": "ethToBorrowerAmount",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "contract IMaverickV2Pool",
+					"name": "ethToQuotePool",
+					"type": "address"
+				},
+				{
+					"internalType": "uint128",
+					"name": "maxRedeemTokenAmount",
+					"type": "uint128"
+				}
+			],
+			"name": "estimateRedeemTokenCollateralWithEth",
+			"outputs": [
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteSpent",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint256",
+					"name": "totalEthSpent",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenRedeemed",
+					"type": "uint128"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "contract IMaverickV2Pool",
+					"name": "ethToQuotePool",
+					"type": "address"
+				},
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				}
+			],
+			"name": "estimateRedeemTokenCollateralWithEthByTick",
+			"outputs": [
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteSpent",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint256",
+					"name": "totalEthSpent",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenRedeemed",
+					"type": "uint128"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "lastTick",
+			"outputs": [
+				{
+					"internalType": "int32",
+					"name": "",
+					"type": "int32"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "user",
+					"type": "address"
+				},
+				{
+					"internalType": "uint128",
+					"name": "tokenRedeemAmount",
+					"type": "uint128"
+				}
+			],
+			"name": "redeemInformation",
+			"outputs": [
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteSpent",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenRedeemed",
+					"type": "uint128"
+				},
+				{
+					"components": [
+						{
+							"internalType": "uint8",
+							"name": "kind",
+							"type": "uint8"
+						},
+						{
+							"internalType": "int32[]",
+							"name": "ticks",
+							"type": "int32[]"
+						},
+						{
+							"internalType": "uint128[]",
+							"name": "amounts",
+							"type": "uint128[]"
+						}
+					],
+					"internalType": "struct IMaverickV2Pool.AddLiquidityParams",
+					"name": "params",
+					"type": "tuple"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "user",
+					"type": "address"
+				},
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				}
+			],
+			"name": "redeemInformationByTick",
+			"outputs": [
+				{
+					"internalType": "uint128[]",
+					"name": "quoteToRepayAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteSpent",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenRedeemed",
+					"type": "uint128"
+				},
+				{
+					"components": [
+						{
+							"internalType": "uint8",
+							"name": "kind",
+							"type": "uint8"
+						},
+						{
+							"internalType": "int32[]",
+							"name": "ticks",
+							"type": "int32[]"
+						},
+						{
+							"internalType": "uint128[]",
+							"name": "amounts",
+							"type": "uint128[]"
+						}
+					],
+					"internalType": "struct IMaverickV2Pool.AddLiquidityParams",
+					"name": "params",
+					"type": "tuple"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				}
+			],
+			"name": "ticksIntoPool",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "tick",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				}
+			],
+			"name": "totalBorrowedAmounts",
+			"outputs": [
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteAmount",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenAmount",
+					"type": "uint128"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "contract ITokenManager",
+					"name": "manager",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "user",
+					"type": "address"
+				}
+			],
+			"name": "userBorrowedAmounts",
+			"outputs": [
+				{
+					"internalType": "int32[]",
+					"name": "ticks",
+					"type": "int32[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "quoteAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128[]",
+					"name": "tokenAmounts",
+					"type": "uint128[]"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalQuoteAmount",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "totalTokenAmount",
+					"type": "uint128"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		}
+	]
+}
