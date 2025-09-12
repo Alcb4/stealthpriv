@@ -2,8 +2,8 @@ import { LenderData } from '../../lib/mappingUtils'
 
 interface TopLendersTableProps {
   lenders: LenderData[]
-  totalLent: bigint
-  totalPoolLiquidity: bigint
+  totalLent: number
+  totalPoolLiquidity: number
   tokenAddress: string
   lastUpdated: Date | null
 }
@@ -13,48 +13,70 @@ export function TopLendersTable({ lenders, totalLent, totalPoolLiquidity, tokenA
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  const formatBalance = (balance: bigint) => {
-    const balanceStr = balance.toString()
-    // Convert wei to MAV (1 MAV = 10^18 wei)
-    const mav = Number(balanceStr) / 1e18
-    // Format with up to 2 decimal places, removing trailing zeros
-    return `${mav.toFixed(2).replace(/\.?0+$/, '')} MAV`
+  const formatBalance = (balance: number | undefined) => {
+    if (!balance) return '0 MAV'
+    
+    // Backend already converts from wei to MAV, so no need to divide by 1e18
+    return `${balance.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 })} MAV`
   }
 
-  const formatTotalLent = (total: bigint) => {
-    const totalStr = total.toString()
-    // Convert wei to MAV (1 MAV = 10^18 wei)
-    const mav = Number(totalStr) / 1e18
-    // Format with up to 2 decimal places, removing trailing zeros
-    return `${mav.toFixed(2).replace(/\.?0+$/, '')} MAV`
+  const formatTotalLent = (total: number | undefined) => {
+    if (!total) return '0 MAV'
+    
+    // Backend already converts from wei to MAV, so no need to divide by 1e18
+    return `${total.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 })} MAV`
   }
 
-  const formatTotalPoolLiquidity = (total: bigint) => {
-    const totalStr = total.toString()
-    // Convert wei to MAV (1 MAV = 10^18 wei)
-    const mav = Number(totalStr) / 1e18
-    // Format with up to 2 decimal places, removing trailing zeros
-    return `${mav.toFixed(2).replace(/\.?0+$/, '')} MAV`
+  const formatTotalPoolLiquidity = (total: number | undefined) => {
+    if (!total) return '0 MAV'
+    
+    // Backend already converts from wei to MAV, so no need to divide by 1e18
+    return `${total.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 })} MAV`
+  }
+
+  const formatTotalPoolSize = (totalLent: number | undefined, availableLiquidity: number | undefined) => {
+    if (!totalLent && !availableLiquidity) return '0 MAV'
+    
+    // Both values are already in MAV units from the API
+    const totalLentMAV = totalLent || 0
+    const availableLiquidityMAV = availableLiquidity || 0
+    const totalPoolSize = totalLentMAV + availableLiquidityMAV
+    
+    // Format with commas and up to 2 decimal places, removing trailing zeros
+    return `${totalPoolSize.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 })} MAV`
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+        {/* Row 1: Token Address */}
         <div>
           <h3 className="font-semibold text-gray-700">Token Address</h3>
           <p className="text-sm text-gray-600 break-all">{tokenAddress}</p>
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-700">Total Lent</h3>
-          <p className="text-sm text-gray-600">{formatTotalLent(totalLent)}</p>
+        
+        {/* Row 2: Lending Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div>
+            <h3 className="font-semibold text-gray-700">Total Lent</h3>
+            <p className="text-sm text-gray-600">{formatTotalLent(totalLent)}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-700">Available Liquidity</h3>
+            <p className="text-sm text-gray-600">{formatTotalPoolLiquidity(totalPoolLiquidity)}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-700">Total Pool Size</h3>
-          <p className="text-sm text-gray-600">{formatTotalPoolLiquidity(totalPoolLiquidity)}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold text-gray-700">Last Updated</h3>
-          <p className="text-sm text-gray-600">{lastUpdated ? lastUpdated.toISOString().replace('T', ' ').slice(0, 19) : 'Never'}</p>
+        
+        {/* Row 3: Pool Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div>
+            <h3 className="font-semibold text-gray-700">Total Pool Size</h3>
+            <p className="text-sm text-gray-600">{formatTotalPoolSize(totalLent, totalPoolLiquidity)}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-700">Last Updated</h3>
+            <p className="text-sm text-gray-600">{lastUpdated ? lastUpdated.toISOString().replace('T', ' ').slice(0, 19) : 'Never'}</p>
+          </div>
         </div>
       </div>
 

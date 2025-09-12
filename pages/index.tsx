@@ -5,7 +5,6 @@ import { LoadLendersButton } from '../src/components/LoadLendersButton'
 import { TopLendersTable } from '../src/components/TopLendersTable'
 import { Loading } from '../src/components/Loading'
 import { Error } from '../src/components/Error'
-import { SearchTimeframeSelector } from '../src/components/SearchTimeframeSelector'
 import { LenderData } from '../lib/mappingUtils'
 
 // Import constants for display
@@ -17,14 +16,14 @@ export default function HomePage() {
   const { disconnect } = useDisconnect()
   
   const [tokenAddress, setTokenAddress] = useState('')
-  const [searchDays, setSearchDays] = useState(3) // Default to 3 days
   const [lenders, setLenders] = useState<LenderData[]>([])
-  const [totalLent, setTotalLent] = useState<bigint>(BigInt(0))
-  const [totalPoolLiquidity, setTotalPoolLiquidity] = useState<bigint>(BigInt(0))
+  const [totalLent, setTotalLent] = useState<number>(0)
+  const [totalPoolLiquidity, setTotalPoolLiquidity] = useState<number>(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
+
 
   const handleLoadLenders = async () => {
     if (!tokenAddress.trim()) {
@@ -42,6 +41,16 @@ export default function HomePage() {
     setProgress(0)
     setErrorMessage('')
 
+    // Simulate progress updates while the API call is running
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev === null) return null
+        if (prev >= 95) return prev // Don't go to 100% until we're done
+        const increment = Math.floor(Math.random() * 15) + 1 // Random increment between 1-15%
+        return Math.min(prev + increment, 95) // Cap at 95% until completion
+      })
+    }, 1000) // Update every second
+
     try {
       console.log('Loading lenders for token:', tokenAddress)
       
@@ -52,8 +61,7 @@ export default function HomePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          tokenAddress: tokenAddress.trim(),
-          days: searchDays
+          tokenAddress: tokenAddress.trim()
         }),
       })
 
@@ -65,8 +73,8 @@ export default function HomePage() {
 
           const result = await response.json()
           setLenders(result.lenders)
-          setTotalLent(BigInt(result.totalLent))
-          setTotalPoolLiquidity(BigInt(result.totalPoolLiquidity || 0))
+          setTotalLent(result.totalLent) // Already in MAV from API
+          setTotalPoolLiquidity(result.totalPoolLiquidity) // Already in MAV from API
           setLastUpdated(new Date(result.lastUpdated || new Date().toISOString()))
 
       console.log('Successfully loaded LIVE lenders data')
@@ -75,8 +83,12 @@ export default function HomePage() {
       const errorMessage = typeof error === 'string' ? error : 'Failed to load lenders data'
       setErrorMessage(errorMessage)
     } finally {
-      setLoading(false)
-      setProgress(null)
+      clearInterval(progressInterval)
+      setProgress(100) // Show 100% briefly before hiding
+      setTimeout(() => {
+        setLoading(false)
+        setProgress(null)
+      }, 500) // Wait 500ms to show 100% completion
     }
   }
 
@@ -138,11 +150,6 @@ export default function HomePage() {
                 placeholder="Enter token address (e.g., 0x...)"
               />
               
-              <SearchTimeframeSelector
-                value={searchDays}
-                onChange={setSearchDays}
-                disabled={loading}
-              />
               
               <LoadLendersButton
                 onClick={handleLoadLenders}
@@ -157,7 +164,7 @@ export default function HomePage() {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-blue-800">Scanning blockchain...</span>
-                        <span className="text-sm text-blue-600">{progress}%</span>
+                        <span className="text-sm text-blue-600">{Math.round(progress)}%</span>
                       </div>
                       <div className="w-full bg-blue-200 rounded-full h-2">
                         <div 
@@ -166,7 +173,10 @@ export default function HomePage() {
                         ></div>
                       </div>
                       <p className="text-xs text-blue-600 mt-2">
-                        Searching {searchDays} day{searchDays !== 1 ? 's' : ''} of historical data in {LOG_CHUNK_SIZE}-block chunks...
+                        {progress < 20 ? "Fetching transaction history from blockchain..." :
+                         progress < 60 ? "Processing transactions and calculating debt..." :
+                         progress < 90 ? "Finalizing calculations..." :
+                         "Almost done..."}
                       </p>
                     </div>
                   )}

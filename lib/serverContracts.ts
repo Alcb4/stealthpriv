@@ -2,15 +2,35 @@
 import { createPublicClient, http } from 'viem'
 import { base } from 'viem/chains'
 
-// Import ABIs from the centralized contracts file
-import { LaunchTokenABI, ITokenManagerABI, ITokenManagerLensABI, CONTRACT_ADDRESSES } from './contracts'
+// Import ABIs directly from JSON files
+import LaunchTokenABI from '../abi/LaunchToken.json'
+import ITokenManagerABI from '../abi/ITokenManager.json'
+import ITokenManagerLensABI from '../abi/ITokenManagerLens.json'
 
-// Use the centralized contract addresses
+// Extract just the ABI from the JSON files
+const LaunchTokenABI_clean = LaunchTokenABI.abi || LaunchTokenABI
+const ITokenManagerABI_clean = ITokenManagerABI.abi || ITokenManagerABI
+const ITokenManagerLensABI_clean = ITokenManagerLensABI.abi || ITokenManagerLensABI
+
+// Contract addresses
+const CONTRACT_ADDRESSES = {
+  ITOKEN_MANAGER: process.env.ITOKEN_MANAGER_ADDRESS || '0x6aeac03a15f0ed64df5f193c9d6b80e8c856c61c',
+  MAV_TOKEN: process.env.MAV_TOKEN_ADDRESS || '0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7',
+  LAUNCH_POOL: process.env.LAUNCH_POOL_ADDRESS || '0x61746280aad2d26214905efa69971c7a969ee57d'
+}
+
 export { CONTRACT_ADDRESSES }
 
 // Create viem client for server-side use only
 // Use custom RPC endpoint with API key for better rate limits
 const getRpcUrl = () => {
+  // Prioritize Ankr API for event searches (better rate limits)
+  const ankrRpcUrl = process.env.ANKR_API_URL
+  if (ankrRpcUrl) {
+    console.log('✅ Using Ankr RPC endpoint with API key')
+    return ankrRpcUrl
+  }
+  
   // Check for custom RPC URL with API key
   const customRpcUrl = process.env.BASE_RPC_URL
   if (customRpcUrl) {
@@ -49,11 +69,21 @@ export const client = createPublicClient({
   })
 })
 
+// Also create a dedicated client for event searches with Ankr API
+export const eventClient = createPublicClient({
+  chain: base,
+  transport: http(process.env.ANKR_API_URL || 'https://rpc.ankr.com/base', {
+    retryCount: 3,
+    retryDelay: 1000,
+    timeout: 30000
+  })
+})
+
 // Contract instances using real ABIs from Remix artifacts
 export const iTokenManagerContract = {
   address: CONTRACT_ADDRESSES.ITOKEN_MANAGER,
-  abi: ITokenManagerABI
+  abi: ITokenManagerABI_clean
 }
 
 // Export ABIs for direct use
-export { LaunchTokenABI, ITokenManagerABI, ITokenManagerLensABI }
+export { LaunchTokenABI_clean as LaunchTokenABI, ITokenManagerABI_clean as ITokenManagerABI, ITokenManagerLensABI_clean as ITokenManagerLensABI }
