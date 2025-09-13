@@ -1,5 +1,5 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { getOutstandingDebtFromBlockSearch } from '../../lib/mappingUtils'
+import { NextRequest, NextResponse } from 'next/server'
+import { getOutstandingDebtFromBlockSearch } from '../../../lib/mappingUtils'
 
 // Helper function to serialize BigInt values for JSON
 function serializeBigInt(obj: any): any {
@@ -17,21 +17,17 @@ function serializeBigInt(obj: any): any {
   return obj
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
+export async function POST(request: NextRequest) {
   // Set a timeout for the API call (increased for full historical data scanning)
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Request timeout after 180 seconds')), 180000)
   })
 
   try {
-    const { tokenAddress } = req.body
+    const { tokenAddress } = await request.json()
 
     if (!tokenAddress) {
-      return res.status(400).json({ error: 'Token address is required' })
+      return NextResponse.json({ error: 'Token address is required' }, { status: 400 })
     }
     
     console.log(`API: Fetching lenders for token: ${tokenAddress} (all historical data)`)
@@ -47,12 +43,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Serialize BigInt values before sending JSON response
     const serializedResult = serializeBigInt(result)
-    res.status(200).json(serializedResult)
+    return NextResponse.json(serializedResult)
   } catch (error) {
     console.error('API Error:', error)
-    res.status(500).json({ 
+    return NextResponse.json({ 
       error: 'Failed to fetch lenders data',
       details: error instanceof Error ? error.message : 'Unknown error'
-    })
+    }, { status: 500 })
   }
 }
